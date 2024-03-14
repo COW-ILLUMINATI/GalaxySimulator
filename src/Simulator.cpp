@@ -1,4 +1,3 @@
-//g++ Galaxy.cpp -lSDL2 -fopenmp && ./a.out
 #include <omp.h>
 #include <iostream>
 #include <stdlib.h>
@@ -16,45 +15,40 @@ class Vector3;
 // Starts the clock
 std::clock_t startTime = std::clock();
 
-// Defines the screen size
+// Defines a pointer to the screen size (needs to be accessible everywhere, but the Vector3 class is still undefined!)
 Vector3 *screenSize;
 
-// Creates the window & renderer
-// Everyone needs to be able to access these
+// Creates the window & renderer, will be assigned later
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 
-
+// Very fast (stolen from Quake III Arena)
 float q_rsqrt(float number)
 {
   long i;
   float x2, y;
   const float threehalfs = 1.5F;
-
   x2 = number * 0.5F;
   y  = number;
-  i  = * ( long * ) &y;                       // evil floating point bit level hacking
-  i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+  i  = * ( long * ) &y;
+  i  = 0x5f3759df - ( i >> 1 );
   y  = * ( float * ) &i;
-  y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
+  y  = y * ( threehalfs - ( x2 * y * y ) );
+  y  = y * ( threehalfs - ( x2 * y * y ) );
   return y;
 }
 
+// Stolen from Stackoverflow, can't be bothered to make it myself... :P
 void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32_t radius)
 {
    const int32_t diameter = (radius * 2);
-
    int32_t x = (radius - 1);
    int32_t y = 0;
    int32_t tx = 1;
    int32_t ty = 1;
    int32_t error = (tx - diameter);
-
    while (x >= y)
    {
-      //  Each of the following renders an octant of the circle
       SDL_RenderDrawPoint(renderer, centreX + x, centreY - y);
       SDL_RenderDrawPoint(renderer, centreX + x, centreY + y);
       SDL_RenderDrawPoint(renderer, centreX - x, centreY - y);
@@ -63,14 +57,12 @@ void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32
       SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
       SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
       SDL_RenderDrawPoint(renderer, centreX - y, centreY + x);
-
       if (error <= 0)
       {
          ++y;
          error += ty;
          ty += 2;
       }
-
       if (error > 0)
       {
          --x;
@@ -80,8 +72,9 @@ void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32
    }
 }
 
+// Oki, after this it's all code from me!!
 
-// Big-ass Vector3 library (naming is not confusing!!! ghaaa)
+// Big-ass Vector3 library
 // Fairly self-explanatory
 struct Vector3
 {
@@ -111,7 +104,6 @@ struct Vector3
     std::string to_String(){
         return "( " + std::to_string(x) + " ; " + std::to_string(y)  + " ; " + std::to_string(z) + " )";
     }
-
     float Dot (Vector3 target) {
         return target.x*x + target.y*y + target.z*z;
     }
@@ -128,7 +120,7 @@ struct Vector3
     Vector3 Normalized () {
         return Vector3(x,y,z) * q_rsqrt(Vector3(x,y,z).SqrMagnitude());
     }
-    Vector3 Rotate(Vector3 eulerAngles){
+    Vector3 Rotate(Vector3 eulerAngles){ // Ghaaaaa
         float xx, yy, zz = 0;
         Vector3 tmpVector3 = Vector3 (x,y,z);
         xx = tmpVector3.x;
@@ -147,22 +139,20 @@ struct Vector3
 
 };
 
-// Static library to map 3D space to screen space
+// Library to map 3D space to screen space ("Camera")
 class Rasterizer {
     private:
-        // Two screen axis
+        // Two screen axis for othographic projection (perspective is overkill)
         Vector3 projectionX = Vector3 (1, 0, 0);
         Vector3 projectionY = Vector3 (0, 1, 0);
         
+        // Keeps track of the last color since switching is expensive AF
         Vector3 lastColor = Vector3 (255, 255, 255);
-
 
         // Rotation of the 'camera'
         Vector3 eulerAngles = Vector3 (-1, 0, -0.55f);
 
-        // Keeps track of the last color since switching is expensive AF
-        Vector3 color = Vector3 (0, 0, 0); // Currently unused
-
+        // We use a function to check the active color (more readable this way)
         void ChangeColor(Vector3 newCol){
             if (newCol != lastColor){
                 SDL_SetRenderDrawColor(renderer,newCol.x,newCol.y,newCol.z,255);
@@ -170,24 +160,25 @@ class Rasterizer {
             }
         }
 
-        // Implement perspective here
         // This function takes 3D coordinates and maps them to the screen.
         Vector3 Project(Vector3 position, Vector3 projectionAxisX, Vector3 projectionAxisY){
-            return ToScreenCoords(Vector3(
+            return ToScreenCoords(Vector3(  // Orthographic rendering, could be changed if needed
                 position.Dot(projectionAxisX),
                 position.Dot(projectionAxisY),
                 0)
                 );
         }
         // Converts [-1; 1] --> [Screenspace]
-        // This makes it possible to resize the screen (in the future)
+        // This makes it possible to resize the screen without wanting to commit suicide
         Vector3 ToScreenCoords(Vector3 fromRange){
             return Vector3((fromRange.x + 1) * screenSize->x / 2,(fromRange.y + 1) * screenSize->y / 2, 0);
         }          
+    
     public:
-        int size = 1;
+        // Position of the camera
         Vector3 worldPosition = Vector3(0,0,0);
 
+        // Low-level method for placing single 3D pixels on a 2D screen
         void PutPoint(Vector3 position, Vector3 color){
             position = position - worldPosition;
             // Projects them onto 2d
@@ -197,6 +188,8 @@ class Rasterizer {
             // Adds itself to the buffer
             SDL_RenderDrawPoint(renderer, position.x, position.y);
         }
+
+        // Same, but for lines
         void PutLine(Vector3 start, Vector3 end, Vector3 color){
             start = start - worldPosition;
             end = end - worldPosition;
@@ -210,6 +203,7 @@ class Rasterizer {
             SDL_RenderDrawLine(renderer, start.x, start.y, end.x, end.y);
         }
 
+        // Same, with circles   (Note:: they will always face the camera!)
         void PutCircle(Vector3 center, float radius, Vector3 color){
             center = center - worldPosition;        
             // Projects them onto 2d
@@ -219,14 +213,19 @@ class Rasterizer {
             // Adds itself to the buffer
             DrawCircle(renderer, center.x, center.y, radius);
         }
+
+        // Rotates the camera
         void Rotate(Vector3 angle){
             eulerAngles = eulerAngles + angle;
         }
-        void Zoom(float scale){
-            size = size * 10000 * scale/10000;
+        
+        // Zooming
+        void Zoom(float scale) {
             projectionX = projectionX * scale;
             projectionY = projectionY * scale;
         }
+
+        // Updates the aspect ratio
         void SetRatio(Vector3 scale){
             scale=scale.Normalized();
             projectionX = projectionX / scale.x;
@@ -245,32 +244,36 @@ struct Star
     
     Vector3 color = Vector3(0,0,0);
     float mass = 1;
-    
+
+    // Default constructor
     Star() {}
+
+    // Called ever subframe
     void tick(float dt) {
-    
         // Calc intégral lets gooo
         position = position + velocity * dt + acceleration * dt * dt * 0.5;        
         velocity = velocity + acceleration * dt;
         acceleration = Vector3 (0,0,0);
     }
 
-    static Vector3 Solve(Vector3 location, Star b, float dt){
-        
+    // Calculates the field at a point in space
+    static Vector3 Solve(Vector3 location, Star b, float dt){    
+        // avoids divisions by 0!
         if (location != b.position) {
             Vector3 r = b.position-location;
             //                                       \/-- distance cannot be smaller than the timestep! 
             float inv_n_r = q_rsqrt(r.SqrMagnitude()+dt);
             return r * inv_n_r * inv_n_r * inv_n_r * b.mass;
         }
+        // If the position is the same as the object, the field is 0 at that point
         return Vector3(0,0,0);
     }
 
 };
 
-
 int main() {
 
+    // Sets the screenSize pointer to an object in memory
     screenSize = new Vector3(0,0,0);
 
     // Loading stuff
@@ -284,8 +287,10 @@ int main() {
 
     // UI
     std::cout<< "UI settings" <<std::endl;
+    // Grabs the screen size
     uiSettings >> screenSize->x;
     uiSettings >> screenSize->y;
+    // Grabs the target framerate
     int tfps;
     uiSettings >> tfps;
     uiSettings.close();
@@ -295,7 +300,9 @@ int main() {
     std::cout<< "Simulator settings" <<std::endl;
     float timestep;
     int mode;
+    // Gets the timestep
     simSettings >> timestep;
+    // Gets the 'mode', either 0 = full simulation, -1 = significant only, anything else = limited simulation.
     simSettings >> mode;
     simSettings.close();
 
@@ -303,38 +310,53 @@ int main() {
     // Stars
     std::cout<< "Stars.." <<std::endl;
     int starCount;
+    // Gets the TOTAL amount of objects
     universe >> starCount;
     int sigStars;
+    // Gets the significant stars
     universe >> sigStars;
     
+    // Quick log
     std::cout<< "Found stars: " << starCount << std::endl;
     
-    Star stars[starCount];
+    // Creates the array (might be doing smt wrong, this can cause segmentation faults?)
+    // (Should be switched to an array of pointers!)
+    Star *stars = new Star[starCount];
     
+    // Itterator for array access
     int i;
     while (true)
     {
+        // Logs the currently parsed object
         std::cout<< "Star: " << i << "\r";
+        
+        // If we're done, we can exit
         if( universe.eof() ) break;
         
+        // Positions
         universe >> stars[i].position.x;
         universe >> stars[i].position.y;
         universe >> stars[i].position.z;
 
+        // Velocities
         universe >> stars[i].velocity.x;
         universe >> stars[i].velocity.y;
         universe >> stars[i].velocity.z;
 
+        // Mass
         universe >> stars[i].mass;
 
+        // Color
         universe >> stars[i].color.x;
         universe >> stars[i].color.y;
         universe >> stars[i].color.z;
 
+        // At the end, since we want to start at 0
         i ++;
     }
 
-    // For debugging
+    // Sets the mode
+    // Acts as an override to starCount, where it stops the parser at a given point during the process
     if (mode == -1){
         starCount = sigStars;
     } else if (mode != 0){
@@ -431,24 +453,14 @@ int main() {
                 }
             }
 
-            cameraPosition = stars[0].position;
+            cameraPosition = stars[trackedStar].position;
         }
 
         if (pushframe){
-
             // Pushes the frame
             SDL_RenderPresent(renderer);
-            //Logs performance
-            
-            //printf ("Zoom: %10d  Tick %10d/%10d   @ %5f FPS\r", rasterizer.size, parser, starCount, (std::clock() - prevClock)/static_cast<float>(CLOCKS_PER_SEC));
-
             prevClock = std::clock();
-
         }
-
-
-
-        //playing = false;
 
         // Queries the event listener
         // ''While'' to clear the buffer
