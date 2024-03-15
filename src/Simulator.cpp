@@ -319,12 +319,13 @@ int main() {
     // Quick log
     std::cout<< "Found stars: " << starCount << std::endl;
     
-    // Creates the vector (might be doing smt wrong, this can cause segmentation faults?)
+    // Creates the vector (I hear these are better than arrays, might change it if I get time to do benchmarks)
     std::vector <Star> stars;
     stars.reserve(starCount);
     
     // Itterator for array access
-    int i = 0;
+    int i = 0; // THIS STUPID INITIALIZATION CAUSED 12 FUCKING HOURS OF DEBUGGING OVER DISCORD GHAA KILL ME 
+
     while (true)
     {
         // Logs the currently parsed object
