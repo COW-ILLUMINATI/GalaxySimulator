@@ -319,12 +319,12 @@ int main() {
     // Quick log
     std::cout<< "Found stars: " << starCount << std::endl;
     
-    // Creates the array (might be doing smt wrong, this can cause segmentation faults?)
-    // (Should be switched to an array of pointers!)
+    // Creates the vector (might be doing smt wrong, this can cause segmentation faults?)
     std::vector <Star> stars;
+    stars.reserve(starCount);
     
     // Itterator for array access
-    int i;
+    int i = 0;
     while (true)
     {
         // Logs the currently parsed object
