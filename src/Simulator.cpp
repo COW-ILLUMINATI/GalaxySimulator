@@ -321,7 +321,7 @@ int main() {
     
     // Creates the array (might be doing smt wrong, this can cause segmentation faults?)
     // (Should be switched to an array of pointers!)
-    Star *stars = new Star[starCount];
+    std::vector <Star> stars;
     
     // Itterator for array access
     int i;
@@ -333,6 +333,9 @@ int main() {
         // If we're done, we can exit
         if( universe.eof() ) break;
         
+        // Adds cell to the vector
+        stars.push_back(Star());
+
         // Positions
         universe >> stars[i].position.x;
         universe >> stars[i].position.y;
