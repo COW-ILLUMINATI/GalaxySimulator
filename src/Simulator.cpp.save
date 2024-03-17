@@ -22,9 +22,20 @@ Vector3 *screenSize;
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 
+// Very fast (stolen from Quake III Arena)
 float q_rsqrt(float number)
 {
-  return 1.0/sqrt(number);
+  long i;
+  float x2, y;
+  const float threehalfs = 1.5F;
+  x2 = number * 0.5F;
+  y  = number;
+  i  = * ( long * ) &y;
+  i  = 0x5f3759df - ( i >> 1 );
+  y  = * ( float * ) &i;
+  y  = y * ( threehalfs - ( x2 * y * y ) );
+  y  = y * ( threehalfs - ( x2 * y * y ) );
+  return y;
 }
 
 // Stolen from Stackoverflow, can't be bothered to make it myself... :P
