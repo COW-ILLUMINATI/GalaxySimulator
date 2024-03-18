@@ -178,11 +178,14 @@ int main () {
 
         for (int i = 0 ; i < sigStars ; i++) {
             printf("Generating body pass 1 %10d/%d\r",i+1, sigStars);
-            Vector3 posTmp = Vector3(
+            Vector3 posTmp = Vector3(radius*10,0,0);
+            while (posTmp.SqrMagnitude()>radius*radius/4){
+                posTmp = Vector3(
                                         rand()%10000/10000.0 * radius - radius/2,
                                         rand()%10000/10000.0 * radius - radius/2,
                                        (rand()%10000/10000.0 * radius - radius/2) * zDistribution
                                     );
+            }
             fileEditor << posTmp.x<< endl;
             fileEditor << posTmp.y<< endl;
             fileEditor << posTmp.z<< endl;
@@ -204,11 +207,14 @@ int main () {
         Vector3 lastColor = Vector3(random()%64+128,random()%128+128,random()%128+128);
         for (int i = 0 ; i < otherStars ; i++) {
             printf("Generating body pass 2 %10d/%d\r",i+1, otherStars);
-            Vector3 posTmp = Vector3(
+            Vector3 posTmp = Vector3(radius*10,0,0);
+            while (posTmp.SqrMagnitude()>radius*radius/4){
+                posTmp = Vector3(
                                         rand()%10000/10000.0 * radius - radius/2,
                                         rand()%10000/10000.0 * radius - radius/2,
                                        (rand()%10000/10000.0 * radius - radius/2) * zDistribution
                                     );
+            }
             fileEditor << posTmp.x<< endl;
             fileEditor << posTmp.y<< endl;
             fileEditor << posTmp.z<< endl;
