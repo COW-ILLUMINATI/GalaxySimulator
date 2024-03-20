@@ -402,9 +402,9 @@ int main() {
             rasterizer.worldPosition = cameraPosition;
             
             // Draws the grid
-            rasterizer.PutLine(Vector3(-10000,0,0),Vector3(10000,0,0),Vector3(1000,0,0));
-            rasterizer.PutLine(Vector3(0,-10000,0),Vector3(0,10000,0),Vector3(0,1000,0));
-            rasterizer.PutLine(Vector3(0,0,-10000),Vector3(0,0,10000),Vector3(0,0,1000));
+            rasterizer.PutLine(Vector3(-10000,0,0),Vector3(10000,0,0),Vector3(100,0,0));
+            rasterizer.PutLine(Vector3(0,-10000,0),Vector3(0,10000,0),Vector3(0,100,0));
+            rasterizer.PutLine(Vector3(0,0,-10000),Vector3(0,0,10000),Vector3(0,0,100));
 
             // Draws the origin
             rasterizer.PutLine(Vector3(0,0,0),Vector3(1,0,0),Vector3(255,0,0));

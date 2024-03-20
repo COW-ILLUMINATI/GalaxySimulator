@@ -89,7 +89,7 @@ struct Vector3
         return Vector3(x,y,z).Dot(Vector3(x,y,z));
     }
     Vector3 Normalized () {
-        return Vector3(x,y,z) * (1.0/(Vector3(x,y,z).SqrMagnitude()));
+        return Vector3(x,y,z) * (1.0/sqrt(Vector3(x,y,z).SqrMagnitude()));
     }
     Vector3 Rotate(Vector3 eulerAngles){
         float xx, yy, zz = 0;
