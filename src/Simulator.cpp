@@ -251,7 +251,7 @@ struct Star
         if (location != b.position) {
             Vector3 r = b.position-location;
             //                                       \/-- distance cannot be smaller than the timestep! 
-            float inv_n_r = q_rsqrt(r.SqrMagnitude()+dt);
+            float inv_n_r = q_rsqrt(r.SqrMagnitude() + dt);
             return r * inv_n_r * inv_n_r * inv_n_r * b.mass;
         }
         // If the position is the same as the object, the field is 0 at that point
@@ -288,9 +288,11 @@ int main() {
     // Sim
     std::cout<< "Simulator settings" <<std::endl;
     float timestep;
+    int budget;
     int mode;
     // Gets the timestep
     simSettings >> timestep;
+    simSettings >> budget;
     // Gets the 'mode', either 0 = full simulation, -1 = significant only, anything else = limited simulation.
     simSettings >> mode;
     simSettings.close();
@@ -350,10 +352,9 @@ int main() {
 
     // Sets the mode
     // Acts as an override to starCount, where it stops the parser at a given point during the process
-    if (mode == -1){
+    if (mode == 1){
         starCount = sigStars;
-    } else if (mode != 0){
-        starCount = mode;
+        budget = sigStars;
     }
 
 
@@ -383,6 +384,10 @@ int main() {
 
     Vector3 cameraPosition = Vector3(0,0,0);
 
+
+    // Predeclaration 
+    Star *parseStars[budget];
+
     while (true) {
 
         // Should the next frame be pushed to the renderer?
@@ -411,16 +416,25 @@ int main() {
 
         if (playing){
 
+            // Which stars will be parse this frame?
+            for (int i = 0 ; i < budget ; i ++){
+                parseStars[i] = &stars[ (rand() % (starCount - sigStars)) + sigStars];
+            }
+            
+            // Adds the black holes to the stack
+            for (int i = 0 ; i < sigStars ; i ++) {
+                parseStars[i]=&stars[i];
+            }
+
             #pragma omp parallel for collapse(2)
             for (int i = 0 ; i < starCount ; i++) {
-                for (int j = 0 ; j < sigStars ; j++){
-                    if (j!=i){
-                        stars[i].acceleration = stars[i].acceleration + 
-                            (
-                            Star::Solve(stars[i].position, stars[j],timestep)
-                            ) 
-                            ;
-                    }
+                for (int j = 0 ; j < budget ; j++){
+                    
+                    stars[i].acceleration = stars[i].acceleration + 
+                        (
+                            Star::Solve(stars[i].position, *parseStars[j], timestep)
+                        ) 
+                        ;
                 }
             }
 

@@ -137,7 +137,9 @@ int main () {
         if ( seed == 0 ) {seed = time(NULL);}
         srand (seed);
 
-        int sigStars      = askInt("Significant Stars?    [ 100 ] ");
+        // 1 black hole per galaxy
+        int sigStars = 1;
+
         int massBH        = askInt("Central Mass?         [ 100 ] ");
         float massStars     = askFloat("Other Masses?         [ 0.1] ");
         int otherStars    = askInt("Star Count?           [10000] ");
@@ -224,7 +226,7 @@ int main () {
             fileEditor << velTmp.y<< endl;
             fileEditor << velTmp.z<< endl;
 
-            fileEditor << 0 << endl;
+            fileEditor << massStars << endl;
 
             if ((int)(i % ((int)(otherStars/colorCount))) == 0) {
                 lastColor = Vector3(random()%64+128,random()%128+128,random()%128+128);
@@ -241,7 +243,8 @@ int main () {
         cout << "(Universes will require recreation! )" << endl;
         fileEditor.open ("Gal_data/Sim_Settings");
         fileEditor << ask("Timestep?                       [0.01] ") << endl;
-        fileEditor << ask("Mode? [0 = full; -1 = sig; else = fix] ") << endl;
+        fileEditor << ask("Star budget?                     [150] ") << endl;
+        fileEditor << ask("Mode? [0 = full; 1 = black holes only] ") << endl;
 
     } else if (choice == 'c'){
         // UI settings
