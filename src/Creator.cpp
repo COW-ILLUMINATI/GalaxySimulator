@@ -150,7 +150,7 @@ int main () {
         int sigStars = 1;
 
         int massBH        = askInt("Black Hole Mass?      [ 100 ] ");
-        float massStars = askFloat("Other Mass?            [1000] ");
+        float massStars = askFloat("Other Mass?              [10] ");
         int otherStars    = askInt("Star Count?           [10000] ");
         int radius        = askInt("Radius?               [ 100 ] ");
         float zDistribution = askFloat("Z Distribution (%)?   [ 0.1 ] ");
