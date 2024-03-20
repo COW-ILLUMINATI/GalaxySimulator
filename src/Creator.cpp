@@ -23,13 +23,14 @@
 #include <string>
 using namespace std;
 
+
+// Quick input lib
 string ask(string prompt){
     string answer;
     cout << prompt << endl;
     cin >> answer; 
     return answer;
 }
-
 int askInt(string prompt){
     int answer;
     cout << prompt << endl;
@@ -42,14 +43,6 @@ float askFloat(string prompt){
     cin >> answer; 
     return answer;
 }
-
-
-
-float q_rsqrt(float number)
-{
-  return 1.0/sqrt(number);
-}
-
 
 // Big-ass Vector3 library (naming is not confusing!!! ghaaa)
 // Fairly self-explanatory
@@ -96,7 +89,7 @@ struct Vector3
         return Vector3(x,y,z).Dot(Vector3(x,y,z));
     }
     Vector3 Normalized () {
-        return Vector3(x,y,z) * q_rsqrt(Vector3(x,y,z).SqrMagnitude());
+        return Vector3(x,y,z) * (1.0/(Vector3(x,y,z).SqrMagnitude()));
     }
     Vector3 Rotate(Vector3 eulerAngles){
         float xx, yy, zz = 0;
@@ -120,11 +113,8 @@ struct Vector3
 
 int main () {
 
-
-
-
+    // Preps the reader
     ofstream fileEditor;
-
 
     char choice;
         cout << "---------- Profile Editor ----------" << endl;
@@ -190,7 +180,10 @@ int main () {
         Vector3 lastColor = Vector3(random()%64+128,random()%128+128,random()%128+128);
         for (int i = 0 ; i < otherStars ; i++) {
             printf("Generating body pass 1 %10d/%d\r",i+1, otherStars);
+            
             Vector3 posTmp = Vector3(radius*10,0,0);
+
+            // Makes sure it's in a circle!
             while (posTmp.SqrMagnitude()>radius*radius/4){
                 posTmp = Vector3(
                                         rand()%10000/10000.0 * radius - radius/2,
@@ -202,6 +195,7 @@ int main () {
             fileEditor << posTmp.y<< endl;
             fileEditor << posTmp.z<< endl;
 
+            // Rotation
             Vector3 velTmp = posTmp.Cross(Vector3(0,0,1)).Normalized() * 
                             sqrt(
                                     (

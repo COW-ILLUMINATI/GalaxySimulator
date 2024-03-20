@@ -22,11 +22,6 @@ Vector3 *screenSize;
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 
-float q_rsqrt(float number)
-{
-  return 1.0/sqrt(number);
-}
-
 // Stolen from Stackoverflow, can't be bothered to make it myself... :P
 void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32_t radius)
 {
@@ -107,7 +102,7 @@ struct Vector3
         return Vector3(x,y,z).Dot(Vector3(x,y,z));
     }
     Vector3 Normalized () {
-        return Vector3(x,y,z) * q_rsqrt(Vector3(x,y,z).SqrMagnitude());
+        return Vector3(x,y,z) * (1.0/sqrt(Vector3(x,y,z).SqrMagnitude()));
     }
     Vector3 Rotate(Vector3 eulerAngles){ // Ghaaaaa
         float xx, yy, zz = 0;
@@ -250,8 +245,8 @@ struct Star
         // avoids divisions by 0!
         if (location != b.position) {
             Vector3 r = b.position-location;
-            //                                       \/-- distance cannot be smaller than the timestep! 
-            float inv_n_r = q_rsqrt(r.SqrMagnitude() + dt);
+            //                                            \/-- distance cannot be smaller than the timestep! 
+            float inv_n_r = 1.0/sqrt((r.SqrMagnitude() + dt));
             return r * inv_n_r * inv_n_r * inv_n_r * b.mass;
         }
         // If the position is the same as the object, the field is 0 at that point
@@ -342,7 +337,7 @@ int main() {
         universe >> stars[i].mass;
         if (i >= sigStars){
             // Ignores black holes
-            // If a galaxy has a mass of 200, and 10 stars are parsed, it'll act like those stars had a mass of 20 (x10)
+            // Ex.: If a galaxy has a mass of 200, and 10 stars are parsed, it'll act like those stars had a mass of 20 (x10)
             stars[i].mass=stars[i].mass/budget;
         }
 
@@ -357,19 +352,18 @@ int main() {
 
     // Sets the mode
     // Acts as an override to starCount, where it stops the parser at a given point during the process
+    // This allows the planning of camera motions
     if (mode == 1){
         starCount = sigStars;
         budget = sigStars;
     }
 
-
+    // SDL output
     std::cout << std::endl << "Bodies generated!" << std::endl;
-
     std::cout << "SDL init : " << SDL_Init(SDL_INIT_VIDEO) << std::endl;
     std::cout << "SDL Wind : " << SDL_CreateWindowAndRenderer(screenSize->x, screenSize->y, 0, &window,&renderer) << std::endl;
     std::cout << "SDL size : " << SDL_RenderSetScale(renderer,1,1) << std::endl;
     std::cout << std::endl;
-
 
     // Spawns a input listener
     SDL_Event event;
@@ -385,12 +379,13 @@ int main() {
     std::clock_t prevClock = startTime;
     bool pushframe = false;
 
+    // Camera will be centered on this star
     int trackedStar = 0;
 
+    // Initialize the camera position
     Vector3 cameraPosition = Vector3(0,0,0);
 
-
-    // Predeclaration 
+    // Predeclaration of the parser array
     Star *parseStars[budget];
 
     while (true) {
@@ -403,13 +398,13 @@ int main() {
             SDL_SetRenderDrawColor(renderer,0,0,0,255);
             SDL_RenderClear(renderer);
 
+            // Centers camera
             rasterizer.worldPosition = cameraPosition;
-
             
             // Draws the grid
-            rasterizer.PutLine(Vector3(-1000,0,0),Vector3(1000,0,0),Vector3(100,0,0));
-            rasterizer.PutLine(Vector3(0,-1000,0),Vector3(0,1000,0),Vector3(0,100,0));
-            rasterizer.PutLine(Vector3(0,0,-1000),Vector3(0,0,1000),Vector3(0,0,100));
+            rasterizer.PutLine(Vector3(-10000,0,0),Vector3(10000,0,0),Vector3(1000,0,0));
+            rasterizer.PutLine(Vector3(0,-10000,0),Vector3(0,10000,0),Vector3(0,1000,0));
+            rasterizer.PutLine(Vector3(0,0,-10000),Vector3(0,0,10000),Vector3(0,0,1000));
 
             // Draws the origin
             rasterizer.PutLine(Vector3(0,0,0),Vector3(1,0,0),Vector3(255,0,0));
@@ -421,7 +416,8 @@ int main() {
 
         if (playing){
 
-            // Which stars will be parse this frame?
+            // Which stars will be parsed this frame?
+            // Picks them at random -- this appears stupid but is actually __very__ accurate
             for (int i = 0 ; i < budget ; i ++){
                 parseStars[i] = &stars[ (rand() % (starCount - sigStars)) + sigStars];
             }
@@ -431,10 +427,13 @@ int main() {
                 parseStars[i]=&stars[i];
             }
 
+            // Can't be fucked to parallelize myself
             #pragma omp parallel for collapse(2)
+            // Each star vs budget
             for (int i = 0 ; i < starCount ; i++) {
                 for (int j = 0 ; j < budget ; j++){
                     
+                    // Solves the new acceleration for each star
                     stars[i].acceleration = stars[i].acceleration + 
                         (
                             Star::Solve(stars[i].position, *parseStars[j], timestep)
@@ -443,34 +442,38 @@ int main() {
                 }
             }
 
+            // Must update everything at the same time
             #pragma omp parallel for
             for (int i = 0 ; i < starCount ; i++) {
                 stars[i].tick(timestep);
             }
 
 
-	    // Camera motion:
-	    rasterizer.Rotate(Vector3(0,0,0.007f * timestep));
+	        // Camera motion (on ticks instead of frames, better camera planning):
+	        rasterizer.Rotate(Vector3(0,0,0.007f * timestep));
 
         }
 
-
+        
+        // Draws
         if (pushframe) {
-            Vector3 newCamera = Vector3(0,0,0);
+            // Every star -- cannot be threaded! (bottleneck)
             for (int i = 0 ; i < starCount ; i++) {
                 if (i < sigStars) {
+                    // Black holes are highlighted
                     rasterizer.PutCircle(stars[i].position, 2 , stars[i].color);
                 } else {
                     rasterizer.PutPoint(stars[i].position, stars[i].color);
                 }
             }
-
+            
+            // New position
             cameraPosition = stars[trackedStar].position;
-        }
-
-        if (pushframe){
+            
             // Pushes the frame
             SDL_RenderPresent(renderer);
+            
+            // Updates the time
             prevClock = std::clock();
         }
 
@@ -521,6 +524,3 @@ int main() {
     }
     return 0;
 }
-
-
-
