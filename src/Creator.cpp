@@ -9,12 +9,18 @@
 
 
 
-
-#include <time.h>
+#include <omp.h>
 #include <iostream>
-#include <math.h> 
+#include <stdlib.h>
+#include <ctime>
+#include <random>
+#include <list>
+#include <vector>
+#include <algorithm>
 #include <string>
+#include <SDL2/SDL.h>
 #include <fstream>
+#include <string>
 using namespace std;
 
 string ask(string prompt){
@@ -114,6 +120,9 @@ struct Vector3
 
 int main () {
 
+
+
+
     ofstream fileEditor;
 
 
@@ -140,8 +149,8 @@ int main () {
         // 1 black hole per galaxy
         int sigStars = 1;
 
-        int massBH        = askInt("Central Mass?         [ 100 ] ");
-        float massStars     = askFloat("Other Masses?         [ 0.1] ");
+        int massBH        = askInt("Black Hole Mass?      [ 100 ] ");
+        float massStars = askFloat("Other Mass?            [1000] ");
         int otherStars    = askInt("Star Count?           [10000] ");
         int radius        = askInt("Radius?               [ 100 ] ");
         float zDistribution = askFloat("Z Distribution (%)?   [ 0.1 ] ");
@@ -178,37 +187,9 @@ int main () {
         fileEditor << 255<< endl;
         fileEditor << 255<< endl;
 
-        for (int i = 0 ; i < sigStars ; i++) {
-            printf("Generating body pass 1 %10d/%d\r",i+1, sigStars);
-            Vector3 posTmp = Vector3(radius*10,0,0);
-            while (posTmp.SqrMagnitude()>radius*radius/4){
-                posTmp = Vector3(
-                                        rand()%10000/10000.0 * radius - radius/2,
-                                        rand()%10000/10000.0 * radius - radius/2,
-                                       (rand()%10000/10000.0 * radius - radius/2) * zDistribution
-                                    );
-            }
-            fileEditor << posTmp.x<< endl;
-            fileEditor << posTmp.y<< endl;
-            fileEditor << posTmp.z<< endl;
-
-            Vector3 velTmp = posTmp.Cross(Vector3(0,0,1)).Normalized() * sqrt(massBH/sqrt(posTmp.SqrMagnitude()));
-            fileEditor << velTmp.x<< endl;
-            fileEditor << velTmp.y<< endl;
-            fileEditor << velTmp.z<< endl;
-
-            fileEditor << massStars<< endl;
-
-            fileEditor << 255<< endl;
-            fileEditor << 255<< endl;
-            fileEditor << 255<< endl;
-        }
-
-        cout << endl;
-
         Vector3 lastColor = Vector3(random()%64+128,random()%128+128,random()%128+128);
         for (int i = 0 ; i < otherStars ; i++) {
-            printf("Generating body pass 2 %10d/%d\r",i+1, otherStars);
+            printf("Generating body pass 1 %10d/%d\r",i+1, otherStars);
             Vector3 posTmp = Vector3(radius*10,0,0);
             while (posTmp.SqrMagnitude()>radius*radius/4){
                 posTmp = Vector3(
@@ -221,7 +202,17 @@ int main () {
             fileEditor << posTmp.y<< endl;
             fileEditor << posTmp.z<< endl;
 
-            Vector3 velTmp = posTmp.Cross(Vector3(0,0,1)).Normalized() * sqrt(massBH/sqrt(posTmp.SqrMagnitude()));
+            Vector3 velTmp = posTmp.Cross(Vector3(0,0,1)).Normalized() * 
+                            sqrt(
+                                    (
+                                        // Black hole
+                                        massBH
+                                        // Other stars
+                                        + massStars * (sqrt(posTmp.SqrMagnitude()) / (radius / 2))*(sqrt(posTmp.SqrMagnitude()) / (radius / 2))
+                                    )
+                                    / sqrt(posTmp.SqrMagnitude())
+                            );
+
             fileEditor << velTmp.x<< endl;
             fileEditor << velTmp.y<< endl;
             fileEditor << velTmp.z<< endl;

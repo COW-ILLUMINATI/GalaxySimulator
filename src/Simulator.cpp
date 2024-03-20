@@ -340,6 +340,11 @@ int main() {
 
         // Mass
         universe >> stars[i].mass;
+        if (i >= sigStars){
+            // Ignores black holes
+            // If a galaxy has a mass of 200, and 10 stars are parsed, it'll act like those stars had a mass of 20 (x10)
+            stars[i].mass=stars[i].mass/budget;
+        }
 
         // Color
         universe >> stars[i].color.x;
