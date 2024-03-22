@@ -295,8 +295,8 @@ int main() {
     // Grabs the target framerate
     int tfps;
     uiSettings >> tfps;
-    int saveFrames;
-    uiSettings >> saveFrames;
+    //int saveFrames;
+    //uiSettings >> saveFrames;
     uiSettings.close();
     
 
@@ -494,10 +494,11 @@ int main() {
             // Updates the time
             prevClock = std::clock();
             
+            /*
             // Renders
             if (saveFrames == 1){
                 SaveWindowToBMP(window,renderer, "/tmp/Simulation_" + std::to_string(tick) + ".bmp");
-            }
+            }*/
         }
 
         // Queries the event listener
