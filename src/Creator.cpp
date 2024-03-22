@@ -239,6 +239,7 @@ int main () {
         fileEditor << ask("Screen size x?    [1920] ") << endl;
         fileEditor << ask("Screen size y?    [1080] ") << endl;
         fileEditor << ask("Target framerate? [ 24 ] ") << endl;
+        fileEditor << ask("Render simulation?[ 0-1] ") << endl;
     
     } else if (choice == 'd') {
         cout << "--------- Prepare Universe ---------" << endl;

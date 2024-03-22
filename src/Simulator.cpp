@@ -255,6 +255,24 @@ struct Star
 
 };
 
+// Rendering
+void SaveWindowToBMP(SDL_Window* window, SDL_Renderer* renderer, const std::string& filename) {
+    SDL_Surface* surface = SDL_GetWindowSurface(window);
+    if (!surface) {
+        printf("Unable to create surface: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, surface->pixels, surface->pitch);
+
+    if (SDL_SaveBMP(surface, filename.c_str()) != 0) {
+        printf("Unable to save bitmap: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_FreeSurface(surface);
+}
+
 int main() {
 
     // Sets the screenSize pointer to an object in memory
@@ -277,6 +295,8 @@ int main() {
     // Grabs the target framerate
     int tfps;
     uiSettings >> tfps;
+    int saveFrames;
+    uiSettings >> saveFrames;
     uiSettings.close();
     
 
@@ -388,7 +408,11 @@ int main() {
     // Predeclaration of the parser array
     Star *parseStars[budget];
 
+    int tick = 0; // Tracks the #tick
+
     while (true) {
+
+        tick++;
 
         // Should the next frame be pushed to the renderer?
         pushframe = (std::clock() - prevClock) / (float)CLOCKS_PER_SEC > (1.0/tfps);
@@ -445,8 +469,7 @@ int main() {
 
 
 	        // Camera motion (on ticks instead of frames, better camera planning):
-	        rasterizer.Rotate(Vector3(0,0,0.007f * timestep));
-
+	        rasterizer.Rotate(Vector3(0,0,0.007f * timestep));            
         }
 
         
@@ -470,6 +493,11 @@ int main() {
             
             // Updates the time
             prevClock = std::clock();
+            
+            // Renders
+            if (saveFrames == 1){
+                SaveWindowToBMP(window,renderer, "/tmp/Simulation_" + std::to_string(tick) + ".bmp");
+            }
         }
 
         // Queries the event listener
