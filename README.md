@@ -1,4 +1,7 @@
 # GalaxySimulator
+
+**NOTE : THIS PROJECT HAS MIGRATED TO https://git.cawez.ca/COW/galaxy_collision_simulator**
+
 A very basic N-Body simulator for visualizing galaxy collisions.
 
 This simulator was made for my astrophysics project. Do not use it -- it sucks.
